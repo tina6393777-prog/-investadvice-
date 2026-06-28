@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>我的投資組合</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:#f2f2f7;color:#1c1c1e;min-height:100vh}
+.app{max-width:480px;margin:0 auto;background:#f2f2f7;min-height:100vh;padding-bottom:80px}
+
+/* TopBar */
+.topbar{background:#fff;padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid #e5e5ea;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:18px;font-weight:600;color:#1c1c1e}
+.topbar-date{font-size:12px;color:#8e8e93}
+
+/* Tabs */
+.tabs{display:flex;background:#e5e5ea;border-radius:10px;padding:3px;margin:12px 16px}
+.tab-btn{flex:1;padding:7px 4px;font-size:13px;border:none;border-radius:8px;background:transparent;color:#8e8e93;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:#fff;color:#1c1c1e;box-shadow:0 1px 3px rgba(0,0,0,0.12)}
+
+/* Pages */
+.page{display:none;animation:fadeIn 0.2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Hero */
+.hero{background:#fff;padding:20px;margin:0 0 12px;border-radius:0}
+.hero-label{font-size:13px;color:#8e8e93;margin-bottom:4px}
+.hero-amount{font-size:34px;font-weight:700;color:#1c1c1e;letter-spacing:-0.5px}
+.hero-sub{font-size:13px;color:#8e8e93;margin-top:4px}
+
+/* KPI Strip */
+.kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px;margin-bottom:12px}
+.kpi-card{background:#fff;border-radius:12px;padding:14px 12px;text-align:center}
+.kpi-label{font-size:11px;color:#8e8e93;margin-bottom:4px}
+.kpi-val{font-size:17px;font-weight:600;color:#1c1c1e}
+.kpi-val.green{color:#34c759}.kpi-val.amber{color:#ff9500}.kpi-val.red{color:#ff3b30}.kpi-val.blue{color:#007aff}
+
+/* Section */
+.section{padding:0 16px;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;padding:0 4px}
+
+/* Cards */
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:8px}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.card-name{font-size:15px;font-weight:600;color:#1c1c1e}
+.card-sub{font-size:12px;color:#8e8e93;margin-top:2px}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;margin-top:3px}
+.badge-etf{background:#e3f2fd;color:#1565c0}
+.badge-stock{background:#fff3e0;color:#e65100}
+.badge-fund{background:#e8f5e9;color:#2e7d32}
+.badge-other{background:#f3e5f5;color:#6a1b9a}
+.card-right{text-align:right}
+.card-right .invested{font-size:11px;color:#8e8e93}
+.card-right .pct{font-size:13px;font-weight:600;color:#007aff;margin-top:2px}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.ci-label{font-size:10px;color:#8e8e93;margin-bottom:2px}
+.ci-val{font-size:13px;font-weight:600;color:#1c1c1e}
+.ci-val.green{color:#34c759}.ci-val.amber{color:#ff9500}.ci-val.red{color:#ff3b30}
+.bar-bg{height:5px;border-radius:3px;background:#f2f2f7;overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
+.note-box{border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+.note-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.note-warn{background:#fff3e0;color:#e65100}
+.note-ok{background:#e8f5e9;color:#2e7d32}
+.note-info{background:#e3f2fd;color:#1565c0}
+.card-actions{display:flex;gap:8px;margin-top:10px}
+.btn-sm{flex:1;padding:8px;font-size:12px;border-radius:8px;border:1px solid #e5e5ea;background:#f9f9f9;color:#1c1c1e;cursor:pointer;font-weight:500}
+.btn-sm.danger{border-color:#ff3b30;color:#ff3b30;background:#fff5f5}
+
+/* Chart */
+.chart-container{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px}
+.chart-inner{position:relative;height:180px;width:180px;margin:0 auto}
+.legend{margin-top:12px}
+.legend-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid #f2f2f7;font-size:13px}
+.legend-row:last-child{border-bottom:none}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-name{flex:1;color:#1c1c1e}
+.legend-amt{color:#8e8e93;font-size:12px}
+.legend-pct{font-weight:600;color:#1c1c1e;min-width:40px;text-align:right}
+
+/* Add Form */
+.add-form{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px}
+.form-title{font-size:16px;font-weight:600;margin-bottom:14px;color:#1c1c1e}
+.form-row{margin-bottom:12px}
+.form-label{font-size:12px;font-weight:500;color:#8e8e93;margin-bottom:5px;display:block}
+.form-input{width:100%;padding:11px 13px;border:1px solid #e5e5ea;border-radius:10px;font-size:15px;color:#1c1c1e;background:#fff;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:#007aff}
+.form-select{width:100%;padding:11px 13px;border:1px solid #e5e5ea;border-radius:10px;font-size:15px;color:#1c1c1e;background:#fff;outline:none;appearance:none}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.btn-primary{width:100%;padding:13px;font-size:15px;font-weight:600;background:#007aff;color:#fff;border:none;border-radius:10px;cursor:pointer;transition:opacity 0.2s}
+.btn-primary:active{opacity:0.8}
+.btn-secondary{width:100%;padding:13px;font-size:15px;font-weight:600;background:#f2f2f7;color:#007aff;border:none;border-radius:10px;cursor:pointer;margin-top:8px}
+.divider{height:0.5px;background:#e5e5ea;margin:12px 0}
+
+/* Analysis */
+.score-card{background:#fff;border-radius:12px;padding:20px;margin-bottom:8px;display:flex;align-items:center;gap:16px}
+.score-circle{width:80px;height:80px;flex-shrink:0;position:relative}
+.score-circle svg{transform:rotate(-90deg)}
+.score-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:700;color:#007aff}
+.score-info .s-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.score-info .s-desc{font-size:13px;color:#8e8e93;line-height:1.5}
+.insight-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:8px}
+.insight-title{font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.insight-item{font-size:13px;color:#3c3c43;line-height:1.6;padding:6px 0;border-bottom:0.5px solid #f2f2f7}
+.insight-item:last-child{border-bottom:none;padding-bottom:0}
+.insight-item strong{color:#1c1c1e}
+.metric-table{width:100%}
+.metric-table td{padding:9px 0;font-size:13px}
+.metric-table td:first-child{color:#8e8e93}
+.metric-table td:last-child{text-align:right;font-weight:500}
+.metric-table tr{border-bottom:0.5px solid #f2f2f7}
+.metric-table tr:last-child td{border-bottom:none}
+
+/* Bottom Nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:0.5px solid #e5e5ea;display:flex;padding:8px 0 env(safe-area-inset-bottom,12px);z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:transparent;cursor:pointer;padding:4px}
+.nav-btn svg{width:24px;height:24px;stroke:#8e8e93;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn span{font-size:10px;color:#8e8e93;font-weight:500}
+.nav-btn.active svg{stroke:#007aff}
+.nav-btn.active span{color:#007aff}
+
+/* Empty State */
+.empty-state{text-align:center;padding:40px 20px;color:#8e8e93}
+.empty-state .emoji{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:15px;line-height:1.5}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:flex-end;justify-content:center;display:none}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:#e5e5ea;border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:16px;text-align:center}
+
+@media(max-width:400px){
+  .hero-amount{font-size:28px}
+  .kpi-val{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <span class="topbar-title">我的投資組合</span>
+    <span class="topbar-date" id="today-date"></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview')">總覽</button>
+    <button class="tab-btn" onclick="switchTab('holdings')">持倉</button>
+    <button class="tab-btn" onclick="switchTab('add')">新增</button>
+    <button class="tab-btn" onclick="switchTab('analysis')">分析</button>
+  </div>
+
+  <!-- 總覽頁 -->
+  <div id="page-overview" class="page active">
+    <div class="hero">
+      <div class="hero-label">總投入金額</div>
+      <div class="hero-amount" id="total-amount">$0</div>
+      <div class="hero-sub" id="total-sub">0 個標的</div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">標的數</div><div class="kpi-val blue" id="kpi-count">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">最大持倉</div><div class="kpi-val" id="kpi-max">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">最高殖利率</div><div class="kpi-val green" id="kpi-yield">—</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">配置比例</div>
+      <div class="chart-container">
+        <div class="chart-inner"><canvas id="donutChart"></canvas></div>
+        <div class="legend" id="chart-legend"></div>
+      </div>
+    </div>
+    <div class="section" id="calendar-section">
+      <div class="section-title">配息月曆</div>
+      <div id="dividend-calendar" class="card"></div>
+    </div>
+  </div>
+
+  <!-- 持倉頁 -->
+  <div id="page-holdings" class="page">
+    <div class="section" style="padding-top:12px">
+      <div id="holdings-list"></div>
+      <div id="holdings-empty" class="empty-state" style="display:none">
+        <div class="emoji">📭</div>
+        <p>還沒有任何標的<br>點「新增」頁籤加入第一筆</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增頁 -->
+  <div id="page-add" class="page">
+    <div class="section" style="padding-top:12px">
+      <div class="add-form">
+        <div class="form-title">新增投資標的</div>
+        <div class="form-row">
+          <label class="form-label">標的代碼或名稱</label>
+          <input class="form-input" id="inp-code" type="text" placeholder="例：00878、聯博基金">
+        </div>
+        <div class="form-row">
+          <label class="form-label">完整名稱</label>
+          <input class="form-input" id="inp-name" type="text" placeholder="例：國泰永續高股息">
+        </div>
+        <div class="form-row">
+          <label class="form-label">類型</label>
+          <select class="form-select" id="inp-type">
+            <option value="etf">ETF</option>
+            <option value="stock">個股</option>
+            <option value="fund">基金</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">配息頻率</label>
+          <select class="form-select" id="inp-freq">
+            <option value="季配">季配</option>
+            <option value="月配">月配</option>
+            <option value="雙月配">雙月配</option>
+            <option value="年配">年配</option>
+            <option value="不配息">不配息</option>
+          </select>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label">投入金額（元）</label>
+            <input class="form-input" id="inp-amount" type="number" placeholder="17585">
+          </div>
+          <div>
+            <label class="form-label">持有股數（股）</label>
+            <input class="form-input" id="inp-shares" type="number" placeholder="500">
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label">目前股價／淨值</label>
+            <input class="form-input" id="inp-price" type="number" placeholder="32.7" step="0.01">
+          </div>
+          <div>
+            <label class="form-label">年化殖利率（%）</label>
+            <input class="form-input" id="inp-yield" type="number" placeholder="9.5" step="0.1">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">備註（選填）</label>
+          <input class="form-input" id="inp-note" type="text" placeholder="例：配息可能含收益平準金">
+        </div>
+        <button class="btn-primary" onclick="addHolding()">新增標的</button>
+        <button class="btn-secondary" onclick="resetForm()">清除重填</button>
+      </div>
+
+      <!-- 預設資料匯入 -->
+      <div class="add-form">
+        <div class="form-title">快速匯入預設資料</div>
+        <p style="font-size:13px;color:#8e8e93;margin-bottom:12px;line-height:1.5">點下方按鈕，一次匯入你目前的 5 筆投資組合（會覆蓋現有資料）</p>
+        <button class="btn-primary" style="background:#34c759" onclick="importDefaults()">匯入我的投資組合</button>
+        <button class="btn-secondary" style="color:#ff3b30;margin-top:8px" onclick="clearAll()">清除所有資料</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分析頁 -->
+  <div id="page-analysis" class="page">
+    <div class="section" style="padding-top:12px">
+      <div class="score-card">
+        <div class="score-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e5ea" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#007aff" stroke-width="8"
+              stroke-dasharray="142 201" stroke-linecap="round"/>
+          </svg>
+          <div class="score-num">72</div>
+        </div>
+        <div class="score-info">
+          <div class="s-title">組合健康度 72/100</div>
+          <div class="s-desc">穩健存息型配置，現金流充裕，建議微調集中度與匯率風險</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:4px">各維度評估</div>
+      <div class="card">
+        <table class="metric-table">
+          <tr><td>現金流穩定性</td><td style="color:#34c759">★★★★★</td></tr>
+          <tr><td>地區分散程度</td><td style="color:#34c759">★★★★☆</td></tr>
+          <tr><td>配息品質</td><td style="color:#ff9500">★★★☆☆</td></tr>
+          <tr><td>流動性</td><td style="color:#ff9500">★★★☆☆</td></tr>
+          <tr><td>匯率風險控制</td><td style="color:#ff9500">★★★☆☆</td></tr>
+          <tr><td>個股集中風險</td><td style="color:#ff3b30">★★☆☆☆</td></tr>
+        </table>
+      </div>
+
+      <div class="section-title">優勢</div>
+      <div class="insight-card">
+        <div class="insight-item">幾乎每個月都有配息入帳，月配 + 雙月配 + 季配組合，<strong>現金流非常穩定</strong></div>
+        <div class="insight-item">台股 ETF + 全球低波動基金，<strong>地區分散效果好</strong></div>
+        <div class="insight-item">00878 Q2 配息創新高（0.66元），<strong>歷年均填息</strong>，表現最穩健</div>
+      </div>
+
+      <div class="section-title">需要注意</div>
+      <div class="insight-card">
+        <div class="insight-item"><strong>配息來源要確認：</strong>00900、00907、聯博基金均標示「配息可能來自本金」，建議定期對帳確認實際組成</div>
+        <div class="insight-item"><strong>匯率風險：</strong>聯博基金為美元計價，佔比 28.2%，台幣升值會侵蝕報酬，可詢問銀行是否有台幣避險版本</div>
+        <div class="insight-item"><strong>00907 相對弱勢：</strong>今年漲幅落後大盤，殖利率僅 4.35%，是三檔 ETF 中最弱的，可評估是否轉換</div>
+        <div class="insight-item"><strong>6898 興櫃流動性：</strong>自家公司股票佔 15%，流動性低，建議不再加碼</div>
+      </div>
+
+      <div class="section-title">優化方向</div>
+      <div class="insight-card">
+        <div class="insight-item">可評估將 00907 部位逐步轉入 <strong>00878</strong>，殖利率較高且填息紀錄更好</div>
+        <div class="insight-item">詢問銀行聯博基金是否有 <strong>台幣避險版本</strong>，可降低匯率波動衝擊</div>
+        <div class="insight-item">6898 建議<strong>維持現況不加碼</strong>，等上市後流動性改善再評估</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-overview" onclick="switchTab('overview')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>總覽</span>
+    </button>
+    <button class="nav-btn" id="nav-holdings" onclick="switchTab('holdings')">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span>持倉</span>
+    </button>
+    <button class="nav-btn" id="nav-add" onclick="switchTab('add')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>新增</span>
+    </button>
+    <button class="nav-btn" id="nav-analysis" onclick="switchTab('analysis')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>分析</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯標的</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <label class="form-label">標的代碼或名稱</label>
+      <input class="form-input" id="edit-code" type="text">
+    </div>
+    <div class="form-row">
+      <label class="form-label">完整名稱</label>
+      <input class="form-input" id="edit-name" type="text">
+    </div>
+    <div class="form-row">
+      <label class="form-label">類型</label>
+      <select class="form-select" id="edit-type">
+        <option value="etf">ETF</option>
+        <option value="stock">個股</option>
+        <option value="fund">基金</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">配息頻率</label>
+      <select class="form-select" id="edit-freq">
+        <option value="季配">季配</option>
+        <option value="月配">月配</option>
+        <option value="雙月配">雙月配</option>
+        <option value="年配">年配</option>
+        <option value="不配息">不配息</option>
+      </select>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">投入金額（元）</label>
+        <input class="form-input" id="edit-amount" type="number">
+      </div>
+      <div>
+        <label class="form-label">持有股數（股）</label>
+        <input class="form-input" id="edit-shares" type="number">
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">目前股價／淨值</label>
+        <input class="form-input" id="edit-price" type="number" step="0.01">
+      </div>
+      <div>
+        <label class="form-label">年化殖利率（%）</label>
+        <input class="form-input" id="edit-yield" type="number" step="0.1">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">備註</label>
+      <input class="form-input" id="edit-note" type="text">
+    </div>
+    <button class="btn-primary" onclick="saveEdit()">儲存</button>
+    <button class="btn-secondary" onclick="document.getElementById('edit-modal').classList.remove('show')">取消</button>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#007aff','#34c759','#ff9500','#5856d6','#ff2d55','#00c7be','#ff6b35','#ac8e68'];
+const STORAGE_KEY = 'portfolio_v2';
+let holdings = [];
+let donutChart = null;
+
+const DEFAULT_HOLDINGS = [
+  {id:1,code:'00878',name:'國泰永續高股息',type:'etf',freq:'季配',amount:17585,shares:1000,price:32.7,yieldPct:9.5,note:'2026 Q2 配息 0.66 元創新高'},
+  {id:2,code:'00900',name:'富邦特選高股息30',type:'etf',freq:'月配',amount:40672,shares:3000,price:19.5,yieldPct:8.7,note:'配息可能含收益平準金'},
+  {id:3,code:'00907',name:'永豐優息存股',type:'etf',freq:'雙月配',amount:15321,shares:1000,price:16.6,yieldPct:4.35,note:'今年漲幅落後大盤'},
+  {id:4,code:'6898',name:'程曦資訊',type:'stock',freq:'年配',amount:19500,shares:2405,price:117,yieldPct:0,note:'興櫃個股，流動性較低'},
+  {id:5,code:'聯博基金',name:'優化波動股票基金 AD 美元',type:'fund',freq:'月配',amount:36518,shares:24.547,price:26.7,yieldPct:4.4,note:'美元計價，注意匯率風險'}
+];
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  holdings = raw ? JSON.parse(raw) : [];
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(holdings));
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function switchTab(name){
+  ['overview','holdings','add','analysis'].forEach(p=>{
+    document.getElementById('page-'+p).classList.remove('active');
+    document.getElementById('nav-'+p).classList.remove('active');
+    document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+      if(['overview','holdings','add','analysis'][i]===name) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='overview') renderOverview();
+  if(name==='holdings') renderHoldings();
+}
+function fmtMoney(n){return '$'+Math.round(n).toLocaleString('zh-TW')}
+function totalAmount(){return holdings.reduce((s,h)=>s+Number(h.amount),0)}
+
+function renderOverview(){
+  const total = totalAmount();
+  document.getElementById('total-amount').textContent = fmtMoney(total);
+  document.getElementById('total-sub').textContent = holdings.length + ' 個標的・更新於今日';
+  document.getElementById('kpi-count').textContent = holdings.length;
+  if(holdings.length===0){
+    document.getElementById('kpi-max').textContent='—';
+    document.getElementById('kpi-yield').textContent='—';
+  } else {
+    const maxH = holdings.reduce((a,b)=>Number(a.amount)>Number(b.amount)?a:b);
+    document.getElementById('kpi-max').textContent = maxH.code;
+    const maxY = holdings.reduce((a,b)=>Number(a.yieldPct)>Number(b.yieldPct)?a:b);
+    document.getElementById('kpi-yield').textContent = maxY.yieldPct+'%';
+  }
+  renderDonut(total);
+  renderCalendar();
+}
+
+function renderDonut(total){
+  const canvas = document.getElementById('donutChart');
+  const legend = document.getElementById('chart-legend');
+  if(donutChart){donutChart.destroy();donutChart=null;}
+  if(holdings.length===0){legend.innerHTML='<p style="text-align:center;color:#8e8e93;font-size:13px;padding:20px 0">尚無資料</p>';return;}
+  const data = holdings.map(h=>Number(h.amount));
+  const labels = holdings.map(h=>h.code);
+  const colors = holdings.map((_,i)=>COLORS[i%COLORS.length]);
+  donutChart = new Chart(canvas,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+ctx.parsed.toLocaleString()+' ('+(ctx.parsed/total*100).toFixed(1)+'%)'}}}}
+  });
+  legend.innerHTML = holdings.map((h,i)=>{
+    const pct = total>0?(Number(h.amount)/total*100).toFixed(1):'0';
+    return `<div class="legend-row"><div class="legend-dot" style="background:${COLORS[i%COLORS.length]}"></div><span class="legend-name">${h.code} ${h.name.length>8?h.name.slice(0,8)+'…':h.name}</span><span class="legend-amt">${fmtMoney(h.amount)}</span><span class="legend-pct">${pct}%</span></div>`;
+  }).join('');
+}
+
+function renderCalendar(){
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const freqMap = {
+    '月配':[0,1,2,3,4,5,6,7,8,9,10,11],
+    '雙月配':[1,3,5,7,9,11],
+    '季配':[1,4,7,10],
+    '年配':[6],
+    '不配息':[]
+  };
+  const cal = Array(12).fill(null).map(()=>[]);
+  holdings.forEach(h=>{
+    const ms = freqMap[h.freq]||[];
+    ms.forEach(m=>cal[m].push(h.code));
+  });
+  const sec = document.getElementById('calendar-section');
+  if(holdings.length===0){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('dividend-calendar').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      ${months.map((m,i)=>`
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#8e8e93;margin-bottom:4px">${m}</div>
+          <div style="min-height:36px;background:${cal[i].length>0?'#e3f2fd':'#f9f9f9'};border-radius:8px;padding:4px 2px;font-size:9px;color:${cal[i].length>0?'#1565c0':'#c7c7cc'};line-height:1.4">
+            ${cal[i].length>0?cal[i].join('<br>'):'—'}
+          </div>
+        </div>`).join('')}
+    </div>
+    <p style="font-size:11px;color:#8e8e93;margin-top:10px;text-align:center">藍色 = 有配息入帳</p>`;
+}
+
+function renderHoldings(){
+  const list = document.getElementById('holdings-list');
+  const empty = document.getElementById('holdings-empty');
+  if(holdings.length===0){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const total = totalAmount();
+  list.innerHTML = holdings.map((h,i)=>{
+    const pct = total>0?(Number(h.amount)/total*100).toFixed(1):'0';
+    const color = COLORS[i%COLORS.length];
+    const badgeClass = {etf:'badge-etf',stock:'badge-stock',fund:'badge-fund',other:'badge-other'}[h.type]||'badge-other';
+    const badgeText = {etf:'ETF',stock:'個股',fund:'基金',other:'其他'}[h.type]||'其他';
+    const mktVal = h.shares>0&&h.price>0?Number(h.shares)*Number(h.price):null;
+    const gain = mktVal?mktVal-Number(h.amount):null;
+    const gainPct = gain&&Number(h.amount)>0?(gain/Number(h.amount)*100).toFixed(1):null;
+    return `<div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">${h.code}</div>
+          <div class="card-sub">${h.name}</div>
+          <span class="badge ${badgeClass}">${badgeText}</span>
+          <span class="badge" style="background:#f2f2f7;color:#8e8e93;margin-left:4px">${h.freq}</span>
+        </div>
+        <div class="card-right">
+          <div class="invested">投入 ${fmtMoney(h.amount)}</div>
+          <div class="pct">${pct}% 佔比</div>
+        </div>
+      </div>
+      <div class="card-grid">
+        <div><div class="ci-label">股價／淨值</div><div class="ci-val">${h.price>0?'$'+Number(h.price).toFixed(2):'—'}</div></div>
+        <div><div class="ci-label">持有股數</div><div class="ci-val">${h.shares>0?Number(h.shares).toLocaleString():'—'}</div></div>
+        <div><div class="ci-label">年化殖利率</div><div class="ci-val ${h.yieldPct>=7?'green':h.yieldPct>=4?'amber':'red'}">${h.yieldPct>0?h.yieldPct+'%':'—'}</div></div>
+        ${mktVal?`<div><div class="ci-label">市值估算</div><div class="ci-val">${fmtMoney(mktVal)}</div></div>`:'<div></div>'}
+        ${gain!==null?`<div><div class="ci-label">損益估算</div><div class="ci-val ${gain>=0?'green':'red'}">${gain>=0?'+':''}${fmtMoney(gain)}</div></div>`:'<div></div>'}
+        ${gainPct!==null?`<div><div class="ci-label">損益%</div><div class="ci-val ${gain>=0?'green':'red'}">${gain>=0?'+':''}${gainPct}%</div></div>`:'<div></div>'}
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      ${h.note?`<div class="note-box note-info"><span class="note-icon">ℹ️</span><span>${h.note}</span></div>`:''}
+      <div class="card-actions">
+        <button class="btn-sm" onclick="openEdit(${h.id})">✏️ 編輯</button>
+        <button class="btn-sm danger" onclick="deleteHolding(${h.id})">🗑 刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addHolding(){
+  const code = document.getElementById('inp-code').value.trim();
+  const name = document.getElementById('inp-name').value.trim();
+  const amount = parseFloat(document.getElementById('inp-amount').value)||0;
+  if(!code){showToast('請填入標的代碼或名稱');return;}
+  if(!name){showToast('請填入完整名稱');return;}
+  if(amount<=0){showToast('請填入投入金額');return;}
+  const h = {
+    id: Date.now(),
+    code,name,
+    type: document.getElementById('inp-type').value,
+    freq: document.getElementById('inp-freq').value,
+    amount,
+    shares: parseFloat(document.getElementById('inp-shares').value)||0,
+    price: parseFloat(document.getElementById('inp-price').value)||0,
+    yieldPct: parseFloat(document.getElementById('inp-yield').value)||0,
+    note: document.getElementById('inp-note').value.trim()
+  };
+  holdings.push(h);
+  save();
+  showToast('✅ 已新增 '+code);
+  resetForm();
+  renderOverview();
+}
+
+function resetForm(){
+  ['inp-code','inp-name','inp-amount','inp-shares','inp-price','inp-yield','inp-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('inp-type').value='etf';
+  document.getElementById('inp-freq').value='季配';
+}
+
+function deleteHolding(id){
+  if(!confirm('確定要刪除這筆標的嗎？')) return;
+  holdings = holdings.filter(h=>h.id!==id);
+  save();
+  showToast('已刪除');
+  renderHoldings();
+  renderOverview();
+}
+
+function openEdit(id){
+  const h = holdings.find(x=>x.id===id);
+  if(!h) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-code').value = h.code;
+  document.getElementById('edit-name').value = h.name;
+  document.getElementById('edit-type').value = h.type;
+  document.getElementById('edit-freq').value = h.freq;
+  document.getElementById('edit-amount').value = h.amount;
+  document.getElementById('edit-shares').value = h.shares||'';
+  document.getElementById('edit-price').value = h.price||'';
+  document.getElementById('edit-yield').value = h.yieldPct||'';
+  document.getElementById('edit-note').value = h.note||'';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function saveEdit(){
+  const id = parseInt(document.getElementById('edit-id').value);
+  const idx = holdings.findIndex(h=>h.id===id);
+  if(idx<0) return;
+  holdings[idx] = {
+    ...holdings[idx],
+    code: document.getElementById('edit-code').value.trim(),
+    name: document.getElementById('edit-name').value.trim(),
+    type: document.getElementById('edit-type').value,
+    freq: document.getElementById('edit-freq').value,
+    amount: parseFloat(document.getElementById('edit-amount').value)||0,
+    shares: parseFloat(document.getElementById('edit-shares').value)||0,
+    price: parseFloat(document.getElementById('edit-price').value)||0,
+    yieldPct: parseFloat(document.getElementById('edit-yield').value)||0,
+    note: document.getElementById('edit-note').value.trim()
+  };
+  save();
+  document.getElementById('edit-modal').classList.remove('show');
+  showToast('✅ 已儲存');
+  renderHoldings();
+  renderOverview();
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById('edit-modal'))
+    document.getElementById('edit-modal').classList.remove('show');
+}
+
+function importDefaults(){
+  if(holdings.length>0 && !confirm('這會覆蓋現有的所有資料，確定嗎？')) return;
+  holdings = JSON.parse(JSON.stringify(DEFAULT_HOLDINGS));
+  save();
+  showToast('✅ 已匯入 5 筆投資組合');
+  renderOverview();
+  switchTab('overview');
+}
+
+function clearAll(){
+  if(!confirm('確定要清除所有資料嗎？這個動作無法復原。')) return;
+  holdings = [];
+  save();
+  showToast('已清除所有資料');
+  renderOverview();
+  renderHoldings();
+}
+
+// Init
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'/');
+load();
+renderOverview();
+</script>
+</body>
+</html>
